@@ -27,7 +27,7 @@ public class GMC {
 		port.openPort();
 		return new GMC(port.getInputStream(), port.getOutputStream());
 	}
-	
+
 	public static GMC fromComPort(String comPort, int baudRate) {
 		return fromComPort(SerialPort.getCommPort(comPort), baudRate);
 	}
@@ -41,6 +41,17 @@ public class GMC {
 		this.output = out;
 
 		this.ascii = Charset.forName("US-ASCII");
+		
+		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+			
+			public void run() {
+				try {
+					close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}));
 	}
 
 	public short getGyroX() throws IOException {
@@ -110,9 +121,44 @@ public class GMC {
 	public float getVoltage() throws IOException {
 		return (float) sendCommand(GMCCommand.GETVOLT)[0] / 10f;
 	}
+	
+	public void enableAlarm(boolean enabled) throws IOException {
+		if (enabled)
+			alarmOn();
+		else
+			alarmOff();
+	}
+
+	public void alarmOn() throws IOException {
+		sendCommand(GMCCommand.ALARM1);
+	}
+	
+	public void alarmOff() throws IOException {
+		sendCommand(GMCCommand.ALARM0);
+	}
+	
+	public void enableSpeaker(boolean enabled) throws IOException {
+		if (enabled)
+			speakerOn();
+		else
+			speakerOff();
+	}
+
+	public void speakerOn() throws IOException {
+		sendCommand(GMCCommand.SPEAKER1);
+	}
+
+	public void speakerOff() throws IOException {
+		sendCommand(GMCCommand.SPEAKER0);
+	}
 
 	public short getCPM() throws IOException {
 		byte[] arr = sendCommand(GMCCommand.GETCPM);
+		return (short) (((arr[0] & 0xFF) << 8) | (arr[1] & 0xFF));
+	}
+	
+	public short getCPS() throws IOException {
+		byte[] arr = sendCommand(GMCCommand.GETCPS);
 		return (short) (((arr[0] & 0xFF) << 8) | (arr[1] & 0xFF));
 	}
 
